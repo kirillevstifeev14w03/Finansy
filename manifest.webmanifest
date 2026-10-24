@@ -1,11 +1,11 @@
 {
   "name": "Финансы — личный бюджет",
   "short_name": "Финансы",
+  "lang": "ru",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f3f4f8",
-  "theme_color": "#f3f4f8",
-  "lang": "ru",
+  "background_color": "#f3f3f7",
+  "theme_color": "#f3f3f7",
   "icons": []
 }
