@@ -171,6 +171,68 @@ expense"]{background:#fff!important;color:#397cf6!important;box-shadow:0 1px 5px
 #settingsPage.settings-open{display:block!important;position:fixed!important;z-index:45!important;inset:auto 16px auto 16px!important;top:calc(env(safe-area-inset-top) + 14px)!important;bottom:auto!important;width:auto!important;max-width:500px!important;max-height:calc(100dvh - env(safe-area-inset-top) - 28px)!important;overflow:auto!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
 body.settings-visible:after{z-index:40!important}
 
+
+/* v23: definitive chart legend removal, palette and settings modal repair */
+.weekly-card > .legend,
+.monthly-chart-card > .legend { display:none !important; }
+.weekly-chart .expense-bar,
+.monthly-chart .expense-bar { background:#dfe2e8 !important; }
+.weekly-chart .income-bar,
+.monthly-chart .income-bar { background:#397cf6 !important; }
+:root { --green:#397cf6; }
+body.settings-visible { overflow:hidden !important; }
+body.settings-visible::after {
+  content:""; position:fixed; inset:0; background:rgba(17,18,22,.42);
+  z-index:98; pointer-events:auto;
+}
+#settingsPage.settings-open {
+  display:block !important; position:fixed !important;
+  z-index:99 !important; left:16px !important; right:16px !important;
+  top:calc(env(safe-area-inset-top) + 18px) !important;
+  bottom:auto !important; width:auto !important; max-width:460px !important;
+  max-height:calc(100dvh - env(safe-area-inset-top) - 36px) !important;
+  margin:0 auto !important; padding:20px !important; overflow:auto !important;
+  visibility:visible !important; opacity:1 !important; pointer-events:auto !important;
+  background:#f3f3f7 !important; color:#111216 !important;
+  border:1px solid #e3e3ea !important; border-radius:24px !important;
+  box-shadow:0 18px 60px rgba(0,0,0,.2) !important;
+}
+#settingsPage.settings-open .settings-mini-header {
+  display:flex !important; align-items:center !important;
+  justify-content:space-between !important; margin:0 0 16px !important;
+}
+#settingsPage.settings-open .settings-mini-header h2 {
+  color:#111216 !important; font-size:26px !important; line-height:1.2 !important;
+}
+#settingsPage.settings-open .settings-close {
+  display:grid !important; place-items:center !important;
+  background:#fff !important; color:#111216 !important;
+  border:1px solid #e4e4e9 !important; border-radius:50% !important;
+  width:42px !important; height:42px !important; flex:0 0 42px !important;
+}
+#settingsPage.settings-open .settings-menu-row {
+  display:flex !important; align-items:center !important; gap:12px !important;
+  width:100% !important; margin:0 0 10px !important; padding:14px !important;
+  background:#fff !important; color:#111216 !important;
+  border:1px solid #e7e7ed !important; border-radius:16px !important;
+  text-align:left !important; white-space:normal !important;
+}
+#settingsPage.settings-open .settings-menu-row strong {
+  display:block !important; color:#111216 !important; font-size:15px !important;
+  line-height:1.3 !important;
+}
+#settingsPage.settings-open .settings-menu-row small {
+  display:block !important; color:#85858d !important; font-size:12px !important;
+  line-height:1.35 !important; margin-top:4px !important;
+}
+#settingsPage.settings-open .settings-menu-row b { color:#397cf6 !important; }
+#settingsPage.settings-open .settings-menu-icon {
+  display:grid !important; place-items:center !important; flex:0 0 42px !important;
+  width:42px !important; height:42px !important; border-radius:13px !important;
+  background:#eff2f8 !important;
+}
+#settingsPage.settings-open .settings-category-card { background:#fff !important; }
+
 </style>
 </head>
 <body>
@@ -366,9 +428,7 @@ async function syncSession(session){cloudUser=session?.user||null;cloudReady=fal
 function scheduleCloudSave(){if(!sb||!cloudUser||!cloudReady)return;clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(pushCloud,900)}
 async function pushCloud(){if(!sb||!cloudUser||!cloudReady||cloudBusy)return;cloudBusy=true;try{state.categories=CATS;const {error}=await sb.from('finansy_data').upsert({user_id:cloudUser.id,data:state,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;const status=document.getElementById('cloudStatus');if(status)status.textContent='Все изменения сохранены в облаке · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}catch(e){console.error(e);const status=document.getElementById('cloudStatus');if(status){status.textContent='Ошибка облачного сохранения. Локальная копия сохранена на устройстве: '+(e.message||'ошибка');status.classList.add('error')}}finally{cloudBusy=false}}
 async function doAuth(kind){if(!sb){authMessage('Не удалось загрузить библиотеку Supabase. Проверь интернет и обнови страницу.',true);return}const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;if(!email||!password){authMessage('Введи электронную почту и пароль.',true);return}if(kind==='signup'&&password.length<6){authMessage('Пароль должен содержать минимум 6 символов.',true);return}authMessage(kind==='signup'?'Создаём аккаунт…':'Выполняем вход…');const result=kind==='signup'?await sb.auth.signUp({email,password,options:{emailRedirectTo:'https://kirillevstifeev14w03.github.io/Finansy/'}}):await sb.auth.signInWithPassword({email,password});if(result.error){authMessage(result.error.message,true);return}if(kind==='signup'&&!result.data.session){authMessage('Аккаунт создан. Проверь почту и подтверди адрес, затем вернись сюда и войди.');return}authMessage('Вход выполнен. Подключаем облако…');await syncSession(result.data.session);if(cloudReady)hideAuth()}
-document.getElementById('openSettings').onclick=window.openSettingsMenu;document.getElementById('openSettingsHidden').onclick=window.openSettingsMenu;
-// Reliable settings overlay handlers: do not navigate to the hidden settings page.
-['openSettings','openSettingsHidden'].forEach(id=>{const b=document.getElementById(id);if(b)b.addEventListener('click',e=>{e.preventDefault();const page=document.getElementById('settingsPage'),main=document.getElementById('settingsMain'),cats=document.getElementById('settingsCategories');if(!page||!main||!cats)return;page.classList.add('settings-open');main.style.display='block';cats.style.display='none';document.getElementById('settingsHeading').textContent='Настройки';document.body.classList.add('settings-visible');});});
+// Settings opening is wired once in the main script above; avoid duplicate handlers.
 document.getElementById('openCloudProfile').onclick=()=>{window.__profileOpenedByTap=true;showAuth()};
 document.getElementById('authClose').onclick=hideAuth;authBackdrop.addEventListener('click',e=>{if(e.target===authBackdrop)hideAuth()});
 document.getElementById('signInBtn').onclick=()=>doAuth('signin');document.getElementById('signUpBtn').onclick=()=>doAuth('signup');
