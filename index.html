@@ -256,6 +256,36 @@ body.settings-visible::after { content:""; position:fixed; inset:0; z-index:998!
  #settingsPage.settings-open { width:calc(100vw - 28px)!important; padding:18px!important; max-height:76dvh!important; }
 }
 
+
+
+/* v26: final overrides — keep these last so older rules cannot undo them */
+html, body { overflow-x:hidden!important; }
+.weekly-card { position:relative!important; overflow:hidden!important; padding:14px 10px 12px!important; }
+.weekly-chart { display:grid!important; grid-template-columns:repeat(7,minmax(0,1fr))!important; align-items:stretch!important; width:100%!important; height:218px!important; max-height:218px!important; min-width:0!important; box-sizing:border-box!important; overflow:hidden!important; }
+.weekly-chart .chart-day { display:flex!important; flex-direction:column!important; justify-content:flex-end!important; min-width:0!important; height:100%!important; overflow:visible!important; }
+.weekly-chart .chart-bars { display:flex!important; flex:1 1 auto!important; min-height:0!important; height:auto!important; max-height:176px!important; align-items:flex-end!important; justify-content:center!important; gap:3px!important; overflow:visible!important; }
+.weekly-chart .chart-day small { display:block!important; flex:0 0 18px!important; height:18px!important; line-height:18px!important; margin:4px 0 0!important; text-align:center!important; font-size:clamp(8px,2.4vw,11px)!important; white-space:nowrap!important; }
+.weekly-chart .chart-bar, .monthly-chart .chart-bar { flex:1 1 0!important; width:auto!important; min-width:3px!important; max-width:18px!important; border-radius:5px 5px 1px 1px!important; cursor:pointer!important; }
+.weekly-chart .expense-bar, .monthly-chart .expense-bar, #monthlyDailyChart .expense-bar { background:#dfe2e8!important; background-color:#dfe2e8!important; }
+.weekly-chart .income-bar, .monthly-chart .income-bar, #monthlyDailyChart .income-bar { background:#397cf6!important; background-color:#397cf6!important; }
+.weekly-card > .legend, .monthly-chart-card > .legend { display:none!important; }
+.monthly-chart { display:grid!important; grid-auto-flow:row!important; grid-template-columns:repeat(var(--chart-days,31),minmax(0,1fr))!important; width:100%!important; min-width:0!important; box-sizing:border-box!important; overflow-x:auto!important; overflow-y:hidden!important; }
+.monthly-chart .chart-day { min-width:0!important; }
+.monthly-chart .chart-bars { min-width:0!important; }
+.bar-tip { display:none!important; position:fixed!important; z-index:2002!important; left:50%!important; top:32%!important; bottom:auto!important; transform:translateX(-50%)!important; width:max-content!important; min-width:150px!important; max-width:calc(100vw - 36px)!important; padding:14px 18px!important; border-radius:15px!important; background:#38383d!important; color:#fff!important; border:1px solid #5a5a61!important; box-shadow:0 12px 35px #0004!important; text-align:center!important; white-space:normal!important; line-height:1.5!important; pointer-events:none!important; }
+.chart-bar.tip-open .bar-tip { display:block!important; }
+body.settings-visible { overflow:hidden!important; }
+body.settings-visible::after { content:""!important; display:block!important; position:fixed!important; inset:0!important; z-index:1998!important; background:rgba(17,18,22,.42)!important; pointer-events:auto!important; }
+#settingsPage.settings-open, body #settingsPage.settings-open, body.settings-visible #settingsPage.settings-open { display:block!important; position:fixed!important; z-index:1999!important; left:50%!important; top:50%!important; right:auto!important; bottom:auto!important; transform:translate(-50%,-50%)!important; width:calc(100vw - 32px)!important; max-width:460px!important; height:auto!important; max-height:calc(100dvh - 36px)!important; margin:0!important; padding:22px!important; overflow-y:auto!important; overflow-x:hidden!important; box-sizing:border-box!important; visibility:visible!important; opacity:1!important; pointer-events:auto!important; background:#f3f3f7!important; background-color:#f3f3f7!important; color:#17171b!important; border:1px solid #dedee6!important; border-radius:24px!important; box-shadow:0 20px 65px rgba(0,0,0,.24)!important; }
+#settingsPage.settings-open *, body.settings-visible #settingsPage.settings-open * { color:#17171b; }
+#settingsPage.settings-open .settings-mini-header { display:flex!important; align-items:center!important; justify-content:space-between!important; margin:0 0 18px!important; }
+#settingsPage.settings-open .settings-mini-header h2, #settingsPage.settings-open #settingsHeading { color:#17171b!important; opacity:1!important; visibility:visible!important; font-size:26px!important; }
+#settingsPage.settings-open .settings-menu-row { display:flex!important; align-items:center!important; gap:12px!important; width:100%!important; margin:0 0 10px!important; padding:15px!important; background:#fff!important; color:#17171b!important; border:1px solid #e5e5ec!important; border-radius:16px!important; text-align:left!important; white-space:normal!important; }
+#settingsPage.settings-open .settings-menu-row strong { color:#17171b!important; }
+#settingsPage.settings-open .settings-menu-row small { color:#777780!important; }
+#settingsPage.settings-open .settings-menu-icon { background:#eff2f8!important; }
+@media(max-width:380px) { #settingsPage.settings-open, body.settings-visible #settingsPage.settings-open { width:calc(100vw - 24px)!important; max-height:calc(100dvh - 24px)!important; padding:17px!important; } .weekly-card { padding-left:7px!important; padding-right:7px!important; } }
+
 </style>
 </head>
 <body>
