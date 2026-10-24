@@ -298,8 +298,8 @@ body.settings-visible::after { content:""!important; display:block!important; po
 .weekly-chart .income-bar,.monthly-chart .income-bar,#monthlyDailyChart .income-bar { background:#397cf6!important; background-color:#397cf6!important; }
 .weekly-card>.legend,.monthly-chart-card>.legend { display:none!important; }
 /* Day view: actual fixed-width columns make horizontal scrolling work on phones. */
-#monthlyDailyChart[data-chart-mode="days"] { display:grid!important; grid-auto-flow:column!important; grid-auto-columns:26px!important; grid-template-columns:none!important; width:100%!important; min-width:0!important; max-width:100%!important; overflow-x:auto!important; overflow-y:hidden!important; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; gap:3px!important; height:246px!important; padding:4px 4px 2px!important; box-sizing:border-box!important; align-items:stretch!important; }
-#monthlyDailyChart[data-chart-mode="days"] .chart-day { width:26px!important; min-width:26px!important; height:100%!important; display:flex!important; flex-direction:column!important; justify-content:flex-end!important; }
+#monthlyDailyChart[data-chart-mode="days"] { display:grid!important; grid-auto-flow:column!important; grid-auto-columns:30px!important; grid-template-columns:none!important; width:100%!important; min-width:0!important; max-width:100%!important; overflow-x:auto!important; overflow-y:hidden!important; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; gap:5px!important; height:246px!important; padding:4px 4px 2px!important; box-sizing:border-box!important; align-items:stretch!important; }
+#monthlyDailyChart[data-chart-mode="days"] .chart-day { width:30px!important; min-width:30px!important; height:100%!important; display:flex!important; flex-direction:column!important; justify-content:flex-end!important; }
 #monthlyDailyChart[data-chart-mode="days"] .chart-bars { flex:0 0 208px!important; height:208px!important; min-height:208px!important; width:100%!important; display:flex!important; align-items:flex-end!important; justify-content:center!important; gap:2px!important; }
 #monthlyDailyChart[data-chart-mode="days"] .chart-bar { flex:0 0 10px!important; width:10px!important; min-width:10px!important; max-width:10px!important; border-radius:4px 4px 1px 1px!important; }
 #monthlyDailyChart[data-chart-mode="days"] .chart-day small { display:block!important; flex:0 0 20px!important; height:20px!important; line-height:20px!important; width:100%!important; text-align:center!important; font-size:10px!important; white-space:nowrap!important; }
@@ -533,4 +533,32 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
 </script>
+
+/* v28: robust UI fixes; applied after all legacy styles */
+<style id="finansy-v28-hard-fixes">
+.weekly-chart .expense-bar,.monthly-chart .expense-bar,#monthlyDailyChart .expense-bar { background:#3b3b40!important; background-color:#3b3b40!important; }
+.weekly-chart .income-bar,.monthly-chart .income-bar,#monthlyDailyChart .income-bar { background:#397cf6!important; background-color:#397cf6!important; }
+#monthlyDailyChart[data-chart-mode="days"] { grid-auto-columns:30px!important; grid-template-columns:none!important; grid-auto-flow:column!important; overflow-x:auto!important; overflow-y:hidden!important; }
+#monthlyDailyChart[data-chart-mode="days"] .chart-day { width:30px!important; min-width:30px!important; }
+#settingsPage.settings-open { display:block!important; position:fixed!important; left:50%!important; top:50%!important; right:auto!important; bottom:auto!important; transform:translate(-50%,-50%)!important; width:calc(100vw - 32px)!important; max-width:460px!important; max-height:calc(100dvh - 32px)!important; overflow:auto!important; box-sizing:border-box!important; z-index:2147483646!important; background:#f3f3f7!important; color:#17171b!important; border:1px solid #dedee6!important; border-radius:24px!important; box-shadow:0 20px 65px #0004!important; padding:20px!important; }
+#settingsPage.settings-open .settings-mini-header h2,#settingsPage.settings-open #settingsHeading { color:#17171b!important; opacity:1!important; visibility:visible!important; }
+#settingsPage.settings-open .settings-menu-row { display:flex!important; width:100%!important; background:#fff!important; color:#17171b!important; border:1px solid #e5e5ec!important; border-radius:16px!important; white-space:normal!important; text-align:left!important; }
+#settingsPage.settings-open .settings-menu-row strong { color:#17171b!important; }
+#settingsPage.settings-open .settings-menu-row small { color:#777780!important; }
+body.settings-visible::after { z-index:2147483645!important; }
+#financeChartTooltip { background:#38383d!important; color:#fff!important; }
+</style>
+<script id="finansy-v28-hard-fixes-js">
+(function(){
+  const expense='#3b3b40', income='#397cf6';
+  function recolor(){document.querySelectorAll('.expense-bar').forEach(e=>{e.style.setProperty('background-color',expense,'important');e.style.setProperty('background',expense,'important')});document.querySelectorAll('.income-bar').forEach(e=>{e.style.setProperty('background-color',income,'important');e.style.setProperty('background',income,'important')})}
+  function forceModal(){const p=document.getElementById('settingsPage');if(!p||!p.classList.contains('settings-open'))return;Object.assign(p.style,{display:'block',position:'fixed',left:'50%',top:'50%',right:'auto',bottom:'auto',transform:'translate(-50%,-50%)',width:'calc(100vw - 32px)',maxWidth:'460px',maxHeight:'calc(100dvh - 32px)',overflowY:'auto',overflowX:'hidden',boxSizing:'border-box',zIndex:'2147483646',background:'#f3f3f7',color:'#17171b',border:'1px solid #dedee6',borderRadius:'24px',boxShadow:'0 20px 65px rgba(0,0,0,.24)',padding:'20px',visibility:'visible',opacity:'1',pointerEvents:'auto'});const h=document.getElementById('settingsHeading');if(h)h.style.setProperty('color','#17171b','important');p.querySelectorAll('.settings-menu-row').forEach(b=>{b.style.setProperty('background','#fff','important');b.style.setProperty('color','#17171b','important');b.style.setProperty('border','1px solid #e5e5ec','important');b.style.setProperty('display','flex','important');b.querySelectorAll('strong').forEach(x=>x.style.setProperty('color','#17171b','important'));b.querySelectorAll('small').forEach(x=>x.style.setProperty('color','#777780','important'))})}
+  const oldOpen=window.openSettingsMenu;window.openSettingsMenu=function(){if(typeof oldOpen==='function')oldOpen();const p=document.getElementById('settingsPage');if(p)p.classList.add('settings-open');document.body.classList.add('settings-visible');forceModal()};
+  const oldClose=window.closeSettingsMenu;window.closeSettingsMenu=function(){if(typeof oldClose==='function')oldClose();const p=document.getElementById('settingsPage');if(p){p.classList.remove('settings-open');p.style.removeProperty('position');p.style.removeProperty('transform');p.style.removeProperty('z-index')}document.body.classList.remove('settings-visible')};
+  document.addEventListener('click',e=>{if(e.target.closest('#openSettings,#openSettingsHidden,#profileSettings'))setTimeout(forceModal,0);if(e.target.closest('#closeSettings'))setTimeout(()=>{const p=document.getElementById('settingsPage');if(p)p.style.display='none'},0);if(e.target.closest('.chart-bar'))setTimeout(recolor,0)},true);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',recolor);else recolor();
+  new MutationObserver(()=>{recolor();forceModal()}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+})();
+</script>
+
 </body></html>
