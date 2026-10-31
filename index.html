@@ -109,7 +109,8 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 #analyticsOverlayContent > .card:has(#analyticsTransactions) { display:none !important; }
 #analyticsOverlayContent #categoryBreakdown { display:block !important; }
 
-.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n</style>
+.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important;min-height:128px}.weekly-card .chart-bar{display:block;flex:0 0 auto;min-height:4px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -193,7 +194,7 @@ function totalBalance(){return state.opening+state.transactions.reduce((a,t)=>a+
 function catObj(name){const c=CATS.find(c=>c.name===name)||{icon:'📦',name:name||'Прочее',type:'expense',subs:[]};return {...c,icon:(state.categoryEmojis&&state.categoryEmojis[name])||c.icon}}
 function txHtml(t,allowDelete=false,showDate=true){const c=catObj(t.category),sign=t.type==='income'?'+':'−',dateText=showDate?' · '+new Date(t.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'}):'';return `<button type="button" class="tx tx-clickable" data-tx-id="${esc(t.id)}" style="width:100%;text-align:left;background:transparent;color:inherit;font:inherit"><div class="tx-icon">${c.icon}</div><div class="tx-main"><div class="tx-name">${esc(t.title||t.category)}</div><div class="tx-meta">${esc(t.category)}${t.subcategory?' · '+esc(t.subcategory):''}${dateText}</div></div><div class="tx-amount ${t.type==='income'?'income':'expense'}">${sign}${money(t.amount)}</div></button>`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){renderDashboard();const am=document.getElementById('analyticsMonth');if(am)am.textContent=monthName(selectedMonth);
+function render(){const am=document.getElementById('analyticsMonth');if(am)am.textContent=monthName(selectedMonth);
 renderHistory();renderAnalytics();renderBudgets();renderGoals();renderCategoryManager();renderDashboard();renderWeeklyChart();renderAnalyticsDailyChart();
 const h=document.getElementById('historyList'),a=document.getElementById('analyticsTransactions');if(h&&a){a.innerHTML=h.innerHTML;bindTransactionClicks(a)}
 }
@@ -203,7 +204,7 @@ function renderWeeklyChart(){
  // Use the same transaction state as History/Analytics; normalize dates to YYYY-MM.
  const now=new Date();
  const monthKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0');
- const txDate=t=>String(t.date||t.createdAt||'').slice(0,10);
+ const txDate=t=>{const v=t.date||t.createdAt||t.created_at||t.timestamp||'';if(!v)return '';if(/^\d{4}-\d{2}-\d{2}/.test(String(v)))return String(v).slice(0,10);const d=new Date(v);return Number.isNaN(d.getTime())?'':dateStr(d)};
  const monthly=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t).slice(0,7)===monthKey);
  const sumType=(arr,type)=>arr.filter(t=>String(t.type||'').toLowerCase()===type).reduce((a,t)=>a+(Number(t.amount)||0),0);
  const income=sumType(monthly,'income'), expense=sumType(monthly,'expense');
@@ -216,7 +217,7 @@ function renderWeeklyChart(){
  // Build the seven-day chart directly so it remains independent of other chart renderers.
  const rows=Array.from({length:7},(_,i)=>{const d=new Date(startDay.getFullYear(),startDay.getMonth(),startDay.getDate()+i),key=dateStr(d),tx=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t)===key);return {label:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i],expense:sumType(tx,'expense'),income:sumType(tx,'income')}});
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
- el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="height:${r.expense?Math.max(4,r.expense/max*118):4}px" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="height:${r.income?Math.max(4,r.income/max*118):4}px" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
+ el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${r.expense?Math.max(4,r.expense/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${r.income?Math.max(4,r.income/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
  el.querySelectorAll('.chart-bar').forEach(b=>{b.onclick=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)}});
 }
 function renderAnalyticsDailyChart(){
@@ -233,7 +234,7 @@ function renderAnalyticsDailyChart(){
    el.style.gridTemplateColumns='repeat(12,minmax(0,1fr))';
  }
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
- el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="height:${r.expense?Math.max(4,r.expense/max*118):4}px" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="height:${r.income?Math.max(4,r.income/max*118):4}px" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
+ el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${r.expense?Math.max(4,r.expense/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${r.income?Math.max(4,r.income/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
  el.querySelectorAll('.chart-bar').forEach(b=>{b.onclick=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)}});
  const title=document.getElementById('dailyChartTitle');if(title)title.textContent=analyticsPeriod==='year'?'2026–2031':String(selectedYear);
  const heading=document.querySelector('#analyticsOverlayContent .section-head h2');if(heading)heading.textContent=analyticsPeriod==='year'?'Динамика по годам':'Динамика по месяцам';
