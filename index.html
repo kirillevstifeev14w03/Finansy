@@ -246,6 +246,7 @@ function renderAnalytics(){
  const tx=analyticsPeriod==='year'?state.transactions.filter(t=>(t.date||'').slice(0,4)===String(year)):currentTx(selectedMonth);
  const s=sums(tx),diff=s.income-s.expense;
  const analyticsMonthEl=document.getElementById('analyticsMonth');if(analyticsMonthEl)analyticsMonthEl.textContent=analyticsPeriod==='year'?String(year):monthName(selectedMonth);
+ const chartHeading=document.querySelector('#analyticsOverlayContent .section-head h2');if(chartHeading)chartHeading.textContent=analyticsPeriod==='year'?'Динамика по месяцам':'Динамика по дням';
  // Keep the main balance card synchronized with the selected period.
  const balanceValueEl=document.getElementById('balanceValue');if(balanceValueEl)balanceValueEl.textContent=fmt(totalBalance());
  const balanceDiffEl=document.getElementById('balanceDiffValue');if(balanceDiffEl){balanceDiffEl.textContent=fmt(diff);balanceDiffEl.classList.toggle('positive-growth',diff>=0);balanceDiffEl.classList.toggle('period-growth',diff<0)}
