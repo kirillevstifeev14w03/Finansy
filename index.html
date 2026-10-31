@@ -109,15 +109,7 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 #analyticsOverlayContent > .card:has(#analyticsTransactions) { display:none !important; }
 #analyticsOverlayContent #categoryBreakdown { display:block !important; }
 
-.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n
-/* Keep the home dashboard chart visible and its seven columns aligned. */
-#homePage .weekly-card{display:block!important;min-height:260px}
-#homePage .weekly-chart{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;align-items:end!important;height:160px!important;min-height:160px!important;visibility:visible!important;opacity:1!important}
-#homePage .weekly-chart .chart-day{display:flex!important;min-height:0!important}
-#homePage .weekly-chart .chart-bars{display:flex!important;height:128px!important;align-items:flex-end!important;visibility:visible!important}
-#homePage .weekly-chart .chart-bar{display:block!important;flex:0 0 7px!important;min-height:4px!important;visibility:visible!important;opacity:1!important}
-#homePage .weekly-month-summary{display:grid!important;grid-template-columns:1fr 1fr!important}
-</style>
+.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n</style>
 </head>
 <body>
 <div class="app">
@@ -208,49 +200,36 @@ const h=document.getElementById('historyList'),a=document.getElementById('analyt
 function renderDashboard(){const dock=document.getElementById('dockBalanceValue');if(dock)dock.textContent=fmt(totalBalance())}
 function chartBarsForDays(days, dateForIndex, containerId, compact=false){const rows=days.map(i=>{const d=dateForIndex(i),key=dateStr(d),tx=state.transactions.filter(t=>t.date===key),expense=tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income=tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0);return {d,key,expense,income}});const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));const el=document.getElementById(containerId);if(!el)return;if(containerId==='monthlyDailyChart')el.style.gridTemplateColumns=`repeat(${rows.length}, minmax(10px, 1fr))`;el.innerHTML=rows.map(r=>{const h1=r.expense?Math.max(4,r.expense/max*(compact?92:118)):4,h2=r.income?Math.max(4,r.income/max*(compact?92:118)):4;const label=compact?r.d.toLocaleDateString('ru-RU',{weekday:'short'}).replace('.',''):String(r.d.getDate());return `<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${h1}px;min-height:4px;padding:0;border:0" data-amount="${esc(money(r.expense))}" data-kind="Расходы" aria-label="${label}: расходы ${esc(money(r.expense))}"><span class="bar-tip">Расходы<br><b>${esc(money(r.expense))}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${h2}px;min-height:4px;padding:0;border:0" data-amount="${esc(money(r.income))}" data-kind="Доходы" aria-label="${label}: доходы ${esc(money(r.income))}"><span class="bar-tip">Доходы<br><b>${esc(money(r.income))}</b></span></button></div><small>${label}</small></div>`}).join('');el.querySelectorAll('.chart-bar').forEach(b=>{let timer;const show=()=>{el.querySelectorAll('.chart-bar.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open')};const hide=()=>b.classList.remove('tip-open');b.addEventListener('pointerdown',()=>{show();timer=setTimeout(hide,2200)});b.addEventListener('pointerup',()=>{clearTimeout(timer);setTimeout(hide,1500)});b.addEventListener('pointercancel',()=>{clearTimeout(timer);hide()});b.addEventListener('mouseenter',show);b.addEventListener('mouseleave',hide);b.addEventListener('click',show)})}
 function renderWeeklyChart(){
+ // Use the same transaction state as History/Analytics; normalize dates to YYYY-MM.
  const now=new Date();
- const transactions=Array.isArray(state.transactions)?state.transactions:[];
- const dateKey=t=>{
-   let v=t.date||t.createdAt||t.created||'';
-   if(v instanceof Date) return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
-   v=String(v);
-   // Accept YYYY-MM-DD, ISO timestamps, and common DD.MM.YYYY dates.
-   if(/^\d{2}\.\d{2}\.\d{4}/.test(v)){const p=v.slice(0,10).split('.');return p[2]+'-'+p[1]+'-'+p[0]}
-   return v.slice(0,10);
- };
  const monthKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0');
- const txType=t=>String(t.type||t.kind||t.operationType||'').toLowerCase().trim();
- const isType=(t,type)=>{const v=txType(t);return type==='income'?['income','доход','доходы','приход'].includes(v):['expense','расход','расходы','трата'].includes(v)};
- const amount=t=>Math.abs(Number(String(t.amount??t.sum??0).replace(',','.'))||0);
- const sumType=(arr,type)=>arr.filter(t=>isType(t,type)).reduce((a,t)=>a+amount(t),0);
- const monthly=transactions.filter(t=>dateKey(t).slice(0,7)===monthKey);
+ const txDate=t=>String(t.date||t.createdAt||'').slice(0,10);
+ const monthly=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t).slice(0,7)===monthKey);
+ const sumType=(arr,type)=>arr.filter(t=>String(t.type||'').toLowerCase()===type).reduce((a,t)=>a+(Number(t.amount)||0),0);
+ const income=sumType(monthly,'income'), expense=sumType(monthly,'expense');
  const incomeEl=document.getElementById('weeklyMonthIncome'),expenseEl=document.getElementById('weeklyMonthExpense');
- if(incomeEl)incomeEl.textContent=money(sumType(monthly,'income'));
- if(expenseEl)expenseEl.textContent=money(sumType(monthly,'expense'));
- const dow=(now.getDay()+6)%7;
- const startDay=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow);
- const el=document.getElementById('weeklyChart'); if(!el)return;
- const rows=Array.from({length:7},(_,i)=>{
-   const d=new Date(startDay.getFullYear(),startDay.getMonth(),startDay.getDate()+i);
-   const key=dateStr(d), tx=transactions.filter(t=>dateKey(t)===key);
-   return {label:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i],expense:sumType(tx,'expense'),income:sumType(tx,'income')};
- });
+ if(incomeEl)incomeEl.textContent=money(income);
+ if(expenseEl)expenseEl.textContent=money(expense);
+ const dow=(now.getDay()+6)%7,startDay=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow);
+ const el=document.getElementById('weeklyChart');
+ if(!el)return;
+ // Build the seven-day chart directly so it remains independent of other chart renderers.
+ const rows=Array.from({length:7},(_,i)=>{const d=new Date(startDay.getFullYear(),startDay.getMonth(),startDay.getDate()+i),key=dateStr(d),tx=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t)===key);return {label:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i],expense:sumType(tx,'expense'),income:sumType(tx,'income')}});
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
  el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="height:${r.expense?Math.max(4,r.expense/max*118):4}px" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="height:${r.income?Math.max(4,r.income/max*118):4}px" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
- el.querySelectorAll('.chart-bar').forEach(b=>{const show=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)};b.addEventListener('click',show)});
+ el.querySelectorAll('.chart-bar').forEach(b=>{b.onclick=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)}});
 }
-
 function renderAnalyticsDailyChart(){
  const el=document.getElementById('monthlyDailyChart');if(!el)return;
  const selectedYear=selectedMonth.getFullYear();
  let rows=[];
  if(analyticsPeriod==='year'){
    // Годовой режим: фиксированный диапазон из шести лет, начиная с 2026.
-   rows=Array.from({length:6},(_,i)=>{const y=2026+i;const tx=state.transactions.filter(t=>String(t.date||t.createdAt||t.created||'').slice(0,4)===String(y));return {label:String(y),expense:tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income:tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0)}});
+   rows=Array.from({length:6},(_,i)=>{const y=2026+i;const tx=state.transactions.filter(t=>(t.date||'').slice(0,4)===String(y));return {label:String(y),expense:tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income:tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0)}});
    el.style.gridTemplateColumns='repeat(6,minmax(0,1fr))';
  }else{
    // Режим «Месяц»: все двенадцать месяцев выбранного текущего года.
-   rows=Array.from({length:12},(_,i)=>{const m=String(i+1).padStart(2,'0');const tx=state.transactions.filter(t=>String(t.date||t.createdAt||t.created||'').slice(0,4)===String(selectedYear)&&String(t.date||t.createdAt||t.created||'').slice(5,7)===m);return {label:new Date(selectedYear,i,1).toLocaleDateString('ru-RU',{month:'short'}).replace('.',''),expense:tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income:tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0)}});
+   rows=Array.from({length:12},(_,i)=>{const m=String(i+1).padStart(2,'0');const tx=state.transactions.filter(t=>(t.date||'').slice(0,4)===String(selectedYear)&&(t.date||'').slice(5,7)===m);return {label:new Date(selectedYear,i,1).toLocaleDateString('ru-RU',{month:'short'}).replace('.',''),expense:tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income:tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0)}});
    el.style.gridTemplateColumns='repeat(12,minmax(0,1fr))';
  }
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
@@ -340,7 +319,9 @@ function download(name,data,type){const blob=new Blob([data],{type}),url=URL.cre
 document.querySelectorAll('.feature-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)e.preventDefault()})});
 render();
 requestAnimationFrame(()=>{renderWeeklyChart();renderAnalyticsDailyChart()});
-window.addEventListener('pageshow',()=>{renderWeeklyChart();renderAnalyticsDailyChart()});
+window.addEventListener('pageshow',()=>{try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}});
+window.addEventListener('load',()=>{try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}}});
 </script>
 <script>
 // Cloud profile integration. Public publishable key only; row-level security protects each user's record.
