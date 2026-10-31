@@ -2,10 +2,15 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Финансы"><link rel="manifest" href="./manifest.webmanifest">
 <title>Финансы — личный бюджет</title>
 <style>
+/* Native-app-like interaction: prevent text selection/copy and browser zoom. */
+html, body, body * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+html, body { touch-action: pan-x pan-y; }
+input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !important; user-select: text !important; -webkit-touch-callout: default !important; }
+
 :root{--bg:#f5f6fa;--card:#fff;--ink:#171923;--muted:#858998;--blue:#3979f6;--blue2:#eaf1ff;--green:#169b72;--red:#e45c68;--line:#eceef4;--shadow:0 8px 28px rgba(30,40,70,.06)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit}button{cursor:pointer;border:0}.app{max-width:540px;margin:0 auto;min-height:100dvh;padding:max(22px,env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom))}
@@ -344,5 +349,19 @@ window.addEventListener('beforeunload',()=>{if(cloudUser&&cloudReady&&cloudSaveT
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
+</script>
+<script>
+// Disable Safari gesture-based page zoom while preserving normal scrolling.
+(function(){
+  ['gesturestart','gesturechange','gestureend'].forEach(function(type){
+    document.addEventListener(type, function(e){ e.preventDefault(); }, {passive:false});
+  });
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, {passive:false});
+})();
 </script>
 </body></html>
