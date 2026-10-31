@@ -99,6 +99,16 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 
 
 .goal-progress-card{display:flex;align-items:center;gap:12px;padding:12px!important;border:1px solid #29292d;border-radius:18px;margin-bottom:10px;background:#1d1d1f;color:#f7f7fa;text-align:left;width:100%}.goal-ring{width:66px;height:66px;flex:0 0 66px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--blue) var(--goal-progress,0%),#38383e 0);position:relative}.goal-ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#1d1d1f}.goal-ring>span{z-index:1;font-size:25px}.goal-progress-card .goal-main{flex:1;min-width:0}.goal-progress-card .goal-pct{display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap}.goal-progress-card .link{font-size:12px;padding:4px 0}.home-goal-card{cursor:pointer}.home-goal-card .goal-pct{display:block}.goal-add-money{color:#6e9cff}
+
+/* Requested analytics cleanup and neutral monthly figures */
+.weekly-month-stat strong, .home-month-summary strong { color:#f7f7fa !important; }
+#analyticsOverlayContent .stats-top-grid,
+#analyticsOverlayContent #periodStatCard,
+#analyticsOverlayContent > .section-head:has(#analyticsTransactions),
+#analyticsOverlayContent > .section-head:has(+ .card #analyticsTransactions),
+#analyticsOverlayContent > .card:has(#analyticsTransactions) { display:none !important; }
+#analyticsOverlayContent #categoryBreakdown { display:block !important; }
+
 </style>
 </head>
 <body>
