@@ -89,6 +89,18 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 #homeGoals .goal-title{font-size:15px}
 #homeGoals .goal-sub{font-size:12px}
 .bottom-balance-dock{position:fixed;z-index:7;left:5.5%;right:5.5%;bottom:calc(12px + env(safe-area-inset-bottom));max-width:500px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px 11px 18px;border:1px solid #ffffff35;border-radius:22px;background:#29292cd9;backdrop-filter:blur(20px);box-shadow:0 2px 0 #ffffff12 inset;color:#fff}
+/* Keep the fixed balance panel from covering goals or the final content. */
+#homePage{padding-bottom:calc(130px + env(safe-area-inset-bottom))}
+#homePage .weekly-card{min-height:0}
+#homePage .weekly-chart{height:190px;min-height:190px;display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:8px;padding:10px 0 0;overflow:visible}
+#homePage .weekly-chart .chart-day{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:7px}
+#homePage .weekly-chart .chart-bars{width:100%;height:150px;display:flex!important;align-items:flex-end!important;justify-content:center;gap:3px}
+#homePage .weekly-chart .chart-bar{width: min(12px,38%);min-width:3px;max-width:14px;min-height:4px;border:0;border-radius:4px 4px 0 0;padding:0;position:relative}
+#homePage .weekly-chart .expense-bar{background:#5b91f5}
+#homePage .weekly-chart .income-bar{background:#55d49a}
+#homePage .weekly-chart .chart-day small{font-size:11px;color:#9999a1}
+@media(max-width:380px){#homePage .weekly-chart{gap:4px}}
+
 .bottom-balance-dock .dock-balance{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;flex:1;background:transparent;color:#fff;text-align:left;padding:0}
 .bottom-balance-dock .dock-balance span{font-size:12px;color:#a5a5ad}
 .bottom-balance-dock .dock-balance strong{font-size:22px;letter-spacing:-.03em;overflow-wrap:anywhere}
@@ -109,8 +121,7 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 #analyticsOverlayContent > .card:has(#analyticsTransactions) { display:none !important; }
 #analyticsOverlayContent #categoryBreakdown { display:block !important; }
 
-.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important;min-height:128px}.weekly-card .chart-bar{display:block;flex:0 0 auto;min-height:4px}
-</style>
+.weekly-card .weekly-chart{display:grid!important;visibility:visible!important;min-height:160px}.weekly-card .chart-bar{display:block;flex:0 0 auto}.weekly-card .chart-bars{display:flex!important;align-items:flex-end!important}\n</style>
 </head>
 <body>
 <div class="app">
@@ -194,32 +205,44 @@ function totalBalance(){return state.opening+state.transactions.reduce((a,t)=>a+
 function catObj(name){const c=CATS.find(c=>c.name===name)||{icon:'📦',name:name||'Прочее',type:'expense',subs:[]};return {...c,icon:(state.categoryEmojis&&state.categoryEmojis[name])||c.icon}}
 function txHtml(t,allowDelete=false,showDate=true){const c=catObj(t.category),sign=t.type==='income'?'+':'−',dateText=showDate?' · '+new Date(t.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'}):'';return `<button type="button" class="tx tx-clickable" data-tx-id="${esc(t.id)}" style="width:100%;text-align:left;background:transparent;color:inherit;font:inherit"><div class="tx-icon">${c.icon}</div><div class="tx-main"><div class="tx-name">${esc(t.title||t.category)}</div><div class="tx-meta">${esc(t.category)}${t.subcategory?' · '+esc(t.subcategory):''}${dateText}</div></div><div class="tx-amount ${t.type==='income'?'income':'expense'}">${sign}${money(t.amount)}</div></button>`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function render(){const am=document.getElementById('analyticsMonth');if(am)am.textContent=monthName(selectedMonth);
+function render(){renderDashboard();const am=document.getElementById('analyticsMonth');if(am)am.textContent=monthName(selectedMonth);
 renderHistory();renderAnalytics();renderBudgets();renderGoals();renderCategoryManager();renderDashboard();renderWeeklyChart();renderAnalyticsDailyChart();
 const h=document.getElementById('historyList'),a=document.getElementById('analyticsTransactions');if(h&&a){a.innerHTML=h.innerHTML;bindTransactionClicks(a)}
 }
-function renderDashboard(){const dock=document.getElementById('dockBalanceValue');if(dock)dock.textContent=fmt(totalBalance())}
+function renderDashboard(){const value=fmt(totalBalance());['dockBalanceValue','balanceValue'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=value})}
 function chartBarsForDays(days, dateForIndex, containerId, compact=false){const rows=days.map(i=>{const d=dateForIndex(i),key=dateStr(d),tx=state.transactions.filter(t=>t.date===key),expense=tx.filter(t=>t.type==='expense').reduce((a,t)=>a+Number(t.amount||0),0),income=tx.filter(t=>t.type==='income').reduce((a,t)=>a+Number(t.amount||0),0);return {d,key,expense,income}});const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));const el=document.getElementById(containerId);if(!el)return;if(containerId==='monthlyDailyChart')el.style.gridTemplateColumns=`repeat(${rows.length}, minmax(10px, 1fr))`;el.innerHTML=rows.map(r=>{const h1=r.expense?Math.max(4,r.expense/max*(compact?92:118)):4,h2=r.income?Math.max(4,r.income/max*(compact?92:118)):4;const label=compact?r.d.toLocaleDateString('ru-RU',{weekday:'short'}).replace('.',''):String(r.d.getDate());return `<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${h1}px;min-height:4px;padding:0;border:0" data-amount="${esc(money(r.expense))}" data-kind="Расходы" aria-label="${label}: расходы ${esc(money(r.expense))}"><span class="bar-tip">Расходы<br><b>${esc(money(r.expense))}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${h2}px;min-height:4px;padding:0;border:0" data-amount="${esc(money(r.income))}" data-kind="Доходы" aria-label="${label}: доходы ${esc(money(r.income))}"><span class="bar-tip">Доходы<br><b>${esc(money(r.income))}</b></span></button></div><small>${label}</small></div>`}).join('');el.querySelectorAll('.chart-bar').forEach(b=>{let timer;const show=()=>{el.querySelectorAll('.chart-bar.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open')};const hide=()=>b.classList.remove('tip-open');b.addEventListener('pointerdown',()=>{show();timer=setTimeout(hide,2200)});b.addEventListener('pointerup',()=>{clearTimeout(timer);setTimeout(hide,1500)});b.addEventListener('pointercancel',()=>{clearTimeout(timer);hide()});b.addEventListener('mouseenter',show);b.addEventListener('mouseleave',hide);b.addEventListener('click',show)})}
 function renderWeeklyChart(){
- // Use the same transaction state as History/Analytics; normalize dates to YYYY-MM.
  const now=new Date();
- const monthKey=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0');
- const txDate=t=>{const v=t.date||t.createdAt||t.created_at||t.timestamp||'';if(!v)return '';if(/^\d{4}-\d{2}-\d{2}/.test(String(v)))return String(v).slice(0,10);const d=new Date(v);return Number.isNaN(d.getTime())?'':dateStr(d)};
- const monthly=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t).slice(0,7)===monthKey);
- const sumType=(arr,type)=>arr.filter(t=>String(t.type||'').toLowerCase()===type).reduce((a,t)=>a+(Number(t.amount)||0),0);
- const income=sumType(monthly,'income'), expense=sumType(monthly,'expense');
- const incomeEl=document.getElementById('weeklyMonthIncome'),expenseEl=document.getElementById('weeklyMonthExpense');
+ const currentMonth=monthKey(now);
+ const transactions=Array.isArray(state.transactions)?state.transactions:[];
+ const getDate=t=>String(t.date||t.createdAt||t.created_at||'').slice(0,10);
+ const getType=t=>String(t.type||t.kind||t.transactionType||'').toLowerCase().trim().replace(/ё/g,'е');
+ const amount=t=>{const raw=t.amount??t.value??t.sum??0;return Number(String(raw).replace(/[\s₽руб.]/gi,'').replace(',','.'))||0};
+ const isIncome=t=>['income','in','доход','доходы','приход','поступление','пополнение','зачисление'].includes(getType(t));
+ const isExpense=t=>['expense','out','расход','расходы','трата','траты','списание','покупка'].includes(getType(t));
+ const monthTransactions=transactions.filter(t=>getDate(t).slice(0,7)===currentMonth);
+ const income=monthTransactions.filter(isIncome).reduce((a,t)=>a+amount(t),0);
+ const expense=monthTransactions.filter(isExpense).reduce((a,t)=>a+amount(t),0);
+ const incomeEl=document.getElementById('weeklyMonthIncome');
+ const expenseEl=document.getElementById('weeklyMonthExpense');
  if(incomeEl)incomeEl.textContent=money(income);
  if(expenseEl)expenseEl.textContent=money(expense);
- const dow=(now.getDay()+6)%7,startDay=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow);
  const el=document.getElementById('weeklyChart');
  if(!el)return;
- // Build the seven-day chart directly so it remains independent of other chart renderers.
- const rows=Array.from({length:7},(_,i)=>{const d=new Date(startDay.getFullYear(),startDay.getMonth(),startDay.getDate()+i),key=dateStr(d),tx=(Array.isArray(state.transactions)?state.transactions:[]).filter(t=>txDate(t)===key);return {label:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i],expense:sumType(tx,'expense'),income:sumType(tx,'income')}});
+ const mondayOffset=(now.getDay()+6)%7;
+ const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate()-mondayOffset);
+ const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+ const rows=days.map((label,i)=>{
+   const d=new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+i);
+   const key=dateStr(d);
+   const list=transactions.filter(t=>getDate(t)===key);
+   return {label,expense:list.filter(isExpense).reduce((a,t)=>a+amount(t),0),income:list.filter(isIncome).reduce((a,t)=>a+amount(t),0)};
+ });
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
- el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${r.expense?Math.max(4,r.expense/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${r.income?Math.max(4,r.income/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
+ el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="height:${r.expense?Math.max(4,r.expense/max*140):4}px" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="height:${r.income?Math.max(4,r.income/max*140):4}px" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
  el.querySelectorAll('.chart-bar').forEach(b=>{b.onclick=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)}});
 }
+
 function renderAnalyticsDailyChart(){
  const el=document.getElementById('monthlyDailyChart');if(!el)return;
  const selectedYear=selectedMonth.getFullYear();
@@ -234,7 +257,7 @@ function renderAnalyticsDailyChart(){
    el.style.gridTemplateColumns='repeat(12,minmax(0,1fr))';
  }
  const max=Math.max(1,...rows.flatMap(r=>[r.expense,r.income]));
- el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="display:block;flex:0 0 auto;height:${r.expense?Math.max(4,r.expense/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="display:block;flex:0 0 auto;height:${r.income?Math.max(4,r.income/max*118):4}px;min-height:4px;padding:0;border:0" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
+ el.innerHTML=rows.map(r=>`<div class="chart-day"><div class="chart-bars"><button type="button" class="chart-bar expense-bar" style="height:${r.expense?Math.max(4,r.expense/max*118):4}px" aria-label="${r.label}: расходы ${money(r.expense)}"><span class="bar-tip">Расходы<br><b>${money(r.expense)}</b></span></button><button type="button" class="chart-bar income-bar" style="height:${r.income?Math.max(4,r.income/max*118):4}px" aria-label="${r.label}: доходы ${money(r.income)}"><span class="bar-tip">Доходы<br><b>${money(r.income)}</b></span></button></div><small>${r.label}</small></div>`).join('');
  el.querySelectorAll('.chart-bar').forEach(b=>{b.onclick=()=>{el.querySelectorAll('.tip-open').forEach(x=>x.classList.remove('tip-open'));b.classList.add('tip-open');setTimeout(()=>b.classList.remove('tip-open'),2200)}});
  const title=document.getElementById('dailyChartTitle');if(title)title.textContent=analyticsPeriod==='year'?'2026–2031':String(selectedYear);
  const heading=document.querySelector('#analyticsOverlayContent .section-head h2');if(heading)heading.textContent=analyticsPeriod==='year'?'Динамика по годам':'Динамика по месяцам';
@@ -311,7 +334,7 @@ document.getElementById('categoryTypeFilter').addEventListener('click',e=>{const
 document.getElementById('addCategory').onclick=()=>editCategory(null);
 window.editCategory=(oldName=null)=>{const old=oldName?CATS.find(c=>c.name===oldName):null;const originalName=old?.name||'';openModal(old?'Редактировать категорию':'Новая категория',`<form id="categoryForm"><div class="field"><label>Название категории</label><input id="categoryName" value="${esc(old?.name||'')}" placeholder="Например, Питомец" required></div><div class="form-grid"><div class="field"><label>Emoji</label><input id="categoryEmoji" value="${esc(old?.icon||'📦')}" maxlength="8" placeholder="🛒" required></div><div class="field"><label>Тип</label><select id="categoryKind"><option value="expense" ${(!old||old.type==='expense')?'selected':''}>Расход</option><option value="income" ${old?.type==='income'?'selected':''}>Доход</option></select></div></div><div class="field"><label>Подкатегории</label><textarea id="categorySubs" rows="3" style="width:100%;border:1px solid #e8eaf1;border-radius:13px;background:#fff;padding:13px 12px;color:#000" placeholder="Например: Корм, Ветеринар, Игрушки">${esc((old?.subs||[]).join(', '))}</textarea><div class="small-note">Перечисли подкатегории через запятую.</div></div><button class="save" type="submit">Сохранить категорию</button>${old?'<button class="outline-btn" type="button" id="deleteCategory">Удалить категорию</button>':''}</form>`,()=>{document.getElementById('categoryForm').onsubmit=e=>{e.preventDefault();const name=document.getElementById('categoryName').value.trim(),icon=document.getElementById('categoryEmoji').value.trim(),kind=document.getElementById('categoryKind').value,subs=[...new Set(document.getElementById('categorySubs').value.split(',').map(x=>x.trim()).filter(Boolean))];if(!name||!icon)return;if(CATS.some(c=>c.name.toLowerCase()===name.toLowerCase()&&c.name!==originalName)){alert('Категория с таким названием уже существует.');return}if(old){const previousType=old.type;old.name=name;old.icon=icon;old.type=kind;old.subs=subs;if(originalName!==name){state.transactions.forEach(t=>{if(t.category===originalName)t.category=name;if(t.title===originalName)t.title=name});state.budgets.forEach(b=>{if(b.category===originalName)b.category=name});if(state.categoryEmojis?.[originalName]){state.categoryEmojis[name]=state.categoryEmojis[originalName];delete state.categoryEmojis[originalName]}}}else CATS.push({name,icon,type:kind,subs});state.categories=CATS;closeModal();save();renderCategoryManager()};const del=document.getElementById('deleteCategory');if(del)del.onclick=()=>{if(state.transactions.some(t=>t.category===originalName)){alert('Эта категория уже используется в истории. Чтобы сохранить историю, переименуй её или оставь без изменений.');return}if(confirm(`Удалить категорию «${originalName}»?`)){CATS=CATS.filter(c=>c.name!==originalName);state.categories=CATS;closeModal();save();renderCategoryManager()}}})};
 window.changeEmoji=(name)=>{const v=prompt('Введи emoji для категории «'+name+'»',catObj(name).icon);if(v&&v.trim()){state.categoryEmojis=state.categoryEmojis||{};state.categoryEmojis[name]=v.trim();save()}};
-function openBalanceEditor(){openModal('Изменить текущий баланс',`<form id="currentBalanceForm"><div class="field"><label>Текущий баланс, ₽</label><input id="currentBalanceInput" type="text" inputmode="decimal" pattern="[0-9\s.,-]+" value="${String(totalBalance()).replace('.',',')}" placeholder="Например, 1678,47" required></div><p class="small-note">История операций сохранится. Баланс будет скорректирован без создания новой операции.</p><button class="save">Сохранить баланс</button></form>`,()=>document.getElementById('currentBalanceForm').onsubmit=e=>{e.preventDefault();const desired=parseMoney(document.getElementById('currentBalanceInput').value);if(!Number.isFinite(desired)){alert('Введи корректную сумму, например 1678,47');return}state.opening=desired-state.transactions.reduce((a,t)=>a+(t.type==='income'?+t.amount:t.type==='expense'?-+t.amount:0),0);closeModal();save()})}
+function openBalanceEditor(){renderDashboard();openModal('Изменить текущий баланс',`<form id="currentBalanceForm"><div class="field"><label>Текущий баланс, ₽</label><input id="currentBalanceInput" type="text" inputmode="decimal" pattern="[0-9\s.,-]+" value="${String(totalBalance()).replace('.',',')}" placeholder="Например, 1678,47" required></div><p class="small-note">История операций сохранится. Баланс будет скорректирован без создания новой операции.</p><button class="save">Сохранить баланс</button></form>`,()=>document.getElementById('currentBalanceForm').onsubmit=e=>{e.preventDefault();const desired=parseMoney(document.getElementById('currentBalanceInput').value);if(!Number.isFinite(desired)){alert('Введи корректную сумму, например 1678,47');return}state.opening=desired-state.transactions.reduce((a,t)=>a+(t.type==='income'?+t.amount:t.type==='expense'?-+t.amount:0),0);closeModal();save()})}
 const dockBalanceEdit=document.getElementById('dockBalanceEdit');if(dockBalanceEdit)dockBalanceEdit.onclick=openBalanceEditor;const dockAddTransaction=document.getElementById('dockAddTransaction');if(dockAddTransaction)dockAddTransaction.onclick=()=>openTx('expense');
 function download(name,data,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 // Keep analytics and history as dedicated full-screen views; all analytics elements are present in the overlay markup.
@@ -322,7 +345,7 @@ render();
 requestAnimationFrame(()=>{renderWeeklyChart();renderAnalyticsDailyChart()});
 window.addEventListener('pageshow',()=>{try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}});
 window.addEventListener('load',()=>{try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{renderDashboard();renderWeeklyChart();renderAnalyticsDailyChart()}catch(e){console.error('Chart render error:',e)}}});
 </script>
 <script>
 // Cloud profile integration. Public publishable key only; row-level security protects each user's record.
