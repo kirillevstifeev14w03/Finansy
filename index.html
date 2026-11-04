@@ -115,6 +115,12 @@ body{background:#000;color:#f7f7fa}.app{max-width:540px;padding:calc(env(safe-ar
 #analyticsOverlayContent #categoryBreakdown { display:block !important; }
 
 
+/* Analytics drill-down: tappable subcategories and dated operation rows */
+.analytics-subcategory-row{min-height:52px;padding:13px 2px!important}
+.analytics-subcategory-row:active{opacity:.72}
+.analytics-subcategory-row span,.analytics-operation-row span{white-space:nowrap;font-weight:700}
+.analytics-operation-row{min-height:48px;padding:12px 2px!important}
+
 /* Fix contrast of cloud profile button in Settings */
 #openCloudProfile{color:#111111 !important;background:#ffffff !important;-webkit-text-fill-color:#111111 !important;}
 #openCloudProfile:visited,#openCloudProfile:hover,#openCloudProfile:active{color:#111111 !important;-webkit-text-fill-color:#111111 !important;}
@@ -271,9 +277,28 @@ window.openCategoryDetails=function(name){
  const tx=(analyticsPeriod==='year'?state.transactions.filter(t=>(t.date||'').slice(0,4)===String(year)):state.transactions.filter(t=>(t.date||'').slice(0,7)===monthKey(selectedMonth))).filter(t=>t.type===categoryType&&t.category===name);
  const total=tx.reduce((a,t)=>a+Number(t.amount||0),0),subs={};
  tx.forEach(t=>{const sub=(t.subcategory||'Без подкатегории').trim();subs[sub]=(subs[sub]||0)+Number(t.amount||0)});
- const rows=Object.entries(subs).sort((a,b)=>b[1]-a[1]).map(([sub,val])=>`<div class="settings-row"><strong>${esc(sub)}</strong><span>${money(val)} · ${total?Math.round(val/total*100):0}%</span></div>`).join('');
+ const rows=Object.entries(subs).sort((a,b)=>b[1]-a[1]).map(([sub,val])=>`<button type="button" class="settings-row analytics-subcategory-row" data-subcategory="${esc(sub)}" style="width:100%;text-align:left;background:transparent;color:inherit;border:0;font:inherit;cursor:pointer"><strong>${esc(sub)}</strong><span>${money(val)} · ${total?Math.round(val/total*100):0}%　›</span></button>`).join('');
  const kind=categoryType==='income'?'доходы':'расходы';
- openModal(name,`<div class="card"><div class="small-note" style="margin-top:0">${kind[0].toUpperCase()+kind.slice(1)} за ${analyticsPeriod==='year'?` ${year}–${year+4}`:String(year)}</div><div style="font-size:28px;font-weight:800;margin:8px 0 14px" class="${categoryType==='income'?'income':''}">${money(total)}</div>${rows||`<div class="empty">Нет операций по подкатегориям за этот период.</div>`}</div>`,()=>{});
+ openModal(name,`<div class="card"><div class="small-note" style="margin-top:0">${kind[0].toUpperCase()+kind.slice(1)} за ${analyticsPeriod==='year'?String(year):selectedMonth.toLocaleDateString('ru-RU',{month:'long',year:'numeric'})}</div><div style="font-size:28px;font-weight:800;margin:8px 0 14px" class="${categoryType==='income'?'income':''}">${money(total)}</div>${rows||`<div class="empty">Нет операций по подкатегориям за этот период.</div>`}<div class="small-note">Нажми на подкатегорию, чтобы увидеть даты и суммы операций.</div></div>`,()=>{
+   content.querySelectorAll('[data-subcategory]').forEach(row=>row.addEventListener('click',()=>openSubcategoryDetails(name,row.dataset.subcategory,categoryType,analyticsPeriod,selectedMonth)));
+ });
+ 
+};
+function openSubcategoryDetails(category,subcategory,type,period,month){
+ const year=month.getFullYear();
+ const tx=state.transactions.filter(t=>{
+   const inPeriod=period==='year'?(t.date||'').slice(0,4)===String(year):(t.date||'').slice(0,7)===monthKey(month);
+   const sub=(t.subcategory||'').trim()||'Без подкатегории';
+   return inPeriod&&t.type===type&&t.category===category&&sub===subcategory;
+ }).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(Number(b.created)||0)-(Number(a.created)||0));
+ const total=tx.reduce((sum,t)=>sum+Number(t.amount||0),0);
+ const rows=tx.map(t=>{
+   const date=t.date?new Date(t.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}):'Дата не указана';
+   return `<div class="settings-row analytics-operation-row"><strong>${esc(date)}</strong><span class="${type==='income'?'income':'expense'}">${type==='income'?'+':'−'}${money(t.amount)}</span></div>`;
+ }).join('');
+ const periodLabel=period==='year'?String(year):month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+ const kind=type==='income'?'Доходы':'Расходы';
+ openModal(subcategory,`<div class="card"><div class="small-note" style="margin-top:0">${esc(category)} · ${kind.toLowerCase()} за ${esc(periodLabel)}</div><div style="font-size:28px;font-weight:800;margin:8px 0 5px" class="${type==='income'?'income':''}">${money(total)}</div><div class="small-note" style="margin-top:0">${tx.length} ${tx.length===1?'операция':tx.length>=2&&tx.length<=4?'операции':'операций'}</div><div style="margin-top:12px">${rows||'<div class="empty">Операций за этот период нет.</div>'}</div></div>`,()=>{});
 };
 function renderBudgets(){const tx=currentTx(selectedMonth).filter(t=>t.type==='expense'),list=document.getElementById('budgetList');list.innerHTML=state.budgets.map(b=>{let spent=tx.filter(t=>t.category===b.category).reduce((a,t)=>a+ +t.amount,0),p=b.limit?spent/b.limit*100:0;return `<div class="budget-card"><div class="budget-top"><span>${catObj(b.category).icon} ${esc(b.category)}</span><span>${money(spent)} <small>/ ${money(b.limit)}</small></span></div><div class="progress ${p>100?'over':''}"><i style="width:${Math.min(100,p)}%"></i></div><div style="display:flex;justify-content:space-between;margin-top:7px;color:var(--muted);font-size:11px"><span>${p>100?'Превышение лимита':`Использовано ${Math.round(p)}%`}</span><button class="link" style="padding:0" onclick="deleteBudget('${b.id}')">Удалить</button></div></div>`}).join('')||empty('Лимиты пока не заданы','Добавь лимит для продуктов, автомобиля или другой категории.')}
 function renderGoals(){const goalCard=g=>{const p=g.target?Math.max(0,Math.min(100,g.saved/g.target*100)):0;return `<div class="goal goal-progress-card"><div class="goal-ring" style="--goal-progress:${p}%"><span>${esc(g.icon||'🎯')}</span></div><div class="goal-main"><div class="goal-title">${esc(g.name)}</div><div class="goal-sub">${money(g.saved)} из ${money(g.target)}${g.date?' · до '+new Date(g.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'}):''}</div><div class="goal-sub">Осталось ${money(Math.max(0,g.target-g.saved))}</div><button type="button" class="link goal-add-money" data-goal-add="${esc(g.id)}">＋ Пополнить</button></div><div class="goal-pct">${Math.round(p)}%<button type="button" class="link" data-goal-edit="${esc(g.id)}">Изменить</button><button type="button" class="link" style="display:block;color:var(--red)" data-goal-delete="${esc(g.id)}">Удалить</button></div></div>`};const html=state.goals.map(goalCard).join('');const list=document.getElementById('goalsList');if(list)list.innerHTML=html||empty('Пока нет целей','Создай цель, например «Подушка безопасности» или «Отпуск».');const homeGoals=document.getElementById('homeGoals');if(homeGoals)homeGoals.innerHTML=state.goals.map(g=>{const p=g.target?Math.max(0,Math.min(100,g.saved/g.target*100)):0;return `<button type="button" class="goal goal-progress-card home-goal-card" data-goal-edit="${esc(g.id)}"><span class="goal-ring" style="--goal-progress:${p}%"><span>${esc(g.icon||'🎯')}</span></span><span class="goal-main"><strong class="goal-title">${esc(g.name)}</strong><span class="goal-sub">${money(g.saved)} / ${money(g.target)}</span></span><strong class="goal-pct">${Math.round(p)}%</strong></button>`}).join('');document.querySelectorAll('[data-goal-edit]').forEach(b=>b.onclick=()=>editGoal(b.dataset.goalEdit));document.querySelectorAll('[data-goal-delete]').forEach(b=>b.onclick=()=>deleteGoal(b.dataset.goalDelete));document.querySelectorAll('[data-goal-add]').forEach(b=>b.onclick=()=>addToGoal(b.dataset.goalAdd))}
